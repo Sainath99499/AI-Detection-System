@@ -5,7 +5,7 @@ from transformers import (
 
 import torch
 
-MODEL_PATH = "models/text_detector"
+MODEL_PATH = "sainathk07888/text-detector-model"
 
 print("Loading trained model...")
 
