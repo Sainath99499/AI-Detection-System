@@ -3,6 +3,7 @@ from fastapi import (
     UploadFile,
     File
 )
+from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel
 
@@ -36,11 +37,15 @@ async def detect_text(data: TextRequest):
 
     from ml.text_detection.inference import predict_text
 
-    # RUN TEXT MODEL
-
-    result = predict_text(
-        data.text
-    )
+    # RUN TEXT MODEL with error capture for debugging
+    try:
+        result = predict_text(
+            data.text
+        )
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
 
     # GENERATE EXPLANATION
 
