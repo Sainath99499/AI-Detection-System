@@ -26,9 +26,20 @@ MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_AUDIO_SIZE = 20 * 1024 * 1024  # 20 MB
 MAX_VIDEO_SIZE = 50 * 1024 * 1024  # 50 MB
 
-ALLOWED_IMAGE_TYPES: Set[str] = {"image/jpeg", "image/png", "image/webp"}
-ALLOWED_AUDIO_TYPES: Set[str] = {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/x-m4a", "audio/mp4"}
-ALLOWED_VIDEO_TYPES: Set[str] = {"video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska"}
+ALLOWED_IMAGE_TYPES: Set[str] = {
+    "image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/svg+xml", "image/tiff"
+}
+ALLOWED_AUDIO_TYPES: Set[str] = {
+    "audio/mpeg", "audio/mp3", "audio/x-mp3", "audio/wav", "audio/x-wav", 
+    "audio/x-m4a", "audio/mp4", "audio/m4a", "audio/ogg", "audio/x-ogg", 
+    "audio/webm", "audio/x-webm", "audio/aac", "audio/x-aac", "audio/flac", 
+    "audio/x-flac", "audio/3gpp", "audio/3gpp2", "application/octet-stream"
+}
+ALLOWED_VIDEO_TYPES: Set[str] = {
+    "video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska", 
+    "video/webm", "video/x-webm", "video/ogg", "video/3gpp", "video/3gpp2", 
+    "video/mpeg", "video/x-flv", "video/flv", "application/octet-stream"
+}
 
 
 async def save_upload_file(upload_file: UploadFile, dest_path: str, max_size: Optional[int] = None, allowed_types: Optional[Set[str]] = None) -> int:
