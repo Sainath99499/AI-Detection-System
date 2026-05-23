@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.venv/
+
+# Uploads
+uploads/
+
+# ML Models
+models/
+hf_cache/
+
+# Database
+*.db
+
+# Node
+node_modules/
+
+# Logs
+logs/
+
+# OS Files
+.DS_Store
+Thumbs.db
