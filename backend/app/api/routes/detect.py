@@ -20,6 +20,11 @@ from ml.explanation_engine.explanation import (
 
 router = APIRouter()
 
+
+@router.post("/_debug_echo")
+async def debug_echo(payload: dict):
+    return {"ok": True, "received": payload}
+
 # =========================================
 # TEXT REQUEST MODEL
 # =========================================
