@@ -63,7 +63,9 @@ const Upload = () => {
 
       console.error(error);
 
-      alert("Text detection failed");
+      const msg = (error as any)?.response?.data || (error as any)?.message || "Text detection failed";
+
+      alert(msg);
 
     } finally {
 
@@ -136,7 +138,9 @@ const Upload = () => {
 
       console.error(error);
 
-      alert("Image detection failed");
+      const msg = (error as any)?.response?.data || (error as any)?.message || "Image detection failed";
+
+      alert(msg);
 
     } finally {
 
@@ -209,7 +213,9 @@ const Upload = () => {
 
       console.error(error);
 
-      alert("Audio detection failed");
+      const msg = (error as any)?.response?.data || (error as any)?.message || "Audio detection failed";
+
+      alert(msg);
 
     } finally {
 
@@ -282,7 +288,9 @@ const Upload = () => {
 
       console.error(error);
 
-      alert("Video detection failed");
+      const msg = (error as any)?.response?.data || (error as any)?.message || "Video detection failed";
+
+      alert(msg);
 
     } finally {
 
