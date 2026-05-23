@@ -8,25 +8,22 @@ from transformers import (
 )
 
 # =========================================
-# MODEL CONFIG
+# LAZY LOAD AUDIO MODEL
 # =========================================
 
 MODEL_NAME = "facebook/wav2vec2-base-960h"
 
-print("Loading audio model...")
+processor = None
+model = None
 
-processor = Wav2Vec2Processor.from_pretrained(
-    MODEL_NAME
-)
-
-model = Wav2Vec2Model.from_pretrained(
-    MODEL_NAME,
-    low_cpu_mem_usage=True
-)
-
-model.eval()
-
-print("Audio model loaded successfully!")
+def _load_audio_model():
+    global processor, model
+    if processor is None or model is None:
+        print("Loading audio model...")
+        processor = Wav2Vec2Processor.from_pretrained(MODEL_NAME)
+        model = Wav2Vec2Model.from_pretrained(MODEL_NAME, low_cpu_mem_usage=True)
+        model.eval()
+        print("Audio model loaded successfully!")
 
 # =========================================
 # AUDIO PREDICTION
@@ -50,8 +47,9 @@ def predict_audio(audio_path):
         padding=True
     )
 
-    with torch.no_grad():
+    _load_audio_model()
 
+    with torch.no_grad():
         outputs = model(**inputs)
 
     hidden_states = outputs.last_hidden_state

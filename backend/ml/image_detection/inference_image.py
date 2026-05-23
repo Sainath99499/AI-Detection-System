@@ -6,17 +6,20 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 
 # =========================================
-# LOAD MODEL
+# LAZY LOAD MODEL
 # =========================================
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR.parent.parent / "models" / "image_detector.h5"
 
-print("Loading image detection model...")
+model = None
 
-model = load_model(MODEL_PATH)
-
-print("Image model loaded successfully!")
+def _load_image_model():
+    global model
+    if model is None:
+        print("Loading image detection model...")
+        model = load_model(MODEL_PATH)
+        print("Image model loaded successfully!")
 
 # =========================================
 # PREDICTION FUNCTION
@@ -24,12 +27,14 @@ print("Image model loaded successfully!")
 
 def predict_image(img_path):
 
-    img_path = Path(img_path)
-    if not img_path.exists():
-        raise FileNotFoundError(
-            f"Image file not found: {img_path.resolve()}"
-        )
+    # Ensure model is loaded
+    _load_image_model()
 
+    # LOAD IMAGE
+    img = image.load_img(
+        image_path,
+        target_size=(224, 224)
+    )
     img = image.load_img(
         str(img_path),
         target_size=(128, 128)
