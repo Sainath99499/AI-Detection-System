@@ -4,6 +4,10 @@ import numpy as np
 
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
+import logging
+import traceback
+
+logger = logging.getLogger("ai_detection.ml.image")
 
 # =========================================
 # LAZY LOAD MODEL
@@ -17,9 +21,9 @@ model = None
 def _load_image_model():
     global model
     if model is None:
-        print("Loading image detection model...")
-        model = load_model(MODEL_PATH)
-        print("Image model loaded successfully!")
+        logger.info("Loading image detection model...")
+        model = load_model(str(MODEL_PATH))
+        logger.info("Image model loaded successfully!")
 
 # =========================================
 # PREDICTION FUNCTION
@@ -31,25 +35,32 @@ def predict_image(img_path):
     _load_image_model()
 
     # LOAD IMAGE
-    img = image.load_img(
-        image_path,
-        target_size=(224, 224)
-    )
-    img = image.load_img(
-        str(img_path),
-        target_size=(128, 128)
-    )
+    try:
+        img = image.load_img(str(img_path), target_size=(224, 224))
+        img_array = image.img_to_array(img)
 
-    img_array = image.img_to_array(img)
+        img_array = img_array / 255.0
 
-    img_array = img_array / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+    except Exception as e:
+        logger.exception("Failed to load or preprocess image")
+        raise
+    try:
+        prediction_raw = model.predict(img_array)
+    except Exception as e:
+        logger.exception("Model inference failed")
+        raise
 
-    img_array = np.expand_dims(
-        img_array,
-        axis=0
-    )
-
-    prediction = model.predict(img_array)[0][0]
+    # handle prediction shape flexibly
+    try:
+        if hasattr(prediction_raw, "shape") and prediction_raw.size == 1:
+            prediction = float(prediction_raw.flatten()[0])
+        else:
+            # fallback to first value
+            prediction = float(np.array(prediction_raw).flatten()[0])
+    except Exception:
+        logger.exception("Failed to parse model output")
+        raise
 
     ai_probability = round(float(prediction) * 100, 2)
 

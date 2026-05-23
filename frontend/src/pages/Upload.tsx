@@ -119,12 +119,7 @@ const Upload = () => {
 
       const response = await API.post(
         "/detect/image",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        }
+        formData
       );
 
       navigate(
@@ -194,12 +189,7 @@ const Upload = () => {
 
       const response = await API.post(
         "/detect/audio",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        }
+        formData
       );
 
       navigate(
@@ -269,12 +259,7 @@ const Upload = () => {
 
       const response = await API.post(
         "/detect/video",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data"
-          }
-        }
+        formData
       );
 
       navigate(

@@ -31,23 +31,14 @@ def _load_audio_model():
 
 def predict_audio(audio_path):
 
-    # LOAD AUDIO
+    # Ensure model/processor are loaded
+    _load_audio_model()
 
-    audio, sample_rate = librosa.load(
-        audio_path,
-        sr=16000
-    )
+    # LOAD AUDIO
+    audio, sample_rate = librosa.load(audio_path, sr=16000)
 
     # PROCESS AUDIO
-
-    inputs = processor(
-        audio,
-        sampling_rate=16000,
-        return_tensors="pt",
-        padding=True
-    )
-
-    _load_audio_model()
+    inputs = processor(audio, sampling_rate=16000, return_tensors="pt", padding=True)
 
     with torch.no_grad():
         outputs = model(**inputs)

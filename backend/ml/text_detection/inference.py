@@ -1,85 +1,67 @@
-import os
-import httpx
+from pathlib import Path
 
-MODEL_REPO = "sainathk07888/text-detector-model"
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
-API_URL = f"https://api-inference.huggingface.co/models/{MODEL_REPO}"
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_PATH = BASE_DIR.parent.parent / "models" / "text_detector"
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
+tokenizer = None
+model = None
 
-HEADERS = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-} if HF_TOKEN else {}
+
+def _load_model():
+    global tokenizer, model
+    if tokenizer is None or model is None:
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+        model = AutoModelForSequenceClassification.from_pretrained(
+            MODEL_PATH,
+            low_cpu_mem_usage=True
+        )
+        model.eval()
 
 
 def predict_text(text):
 
-    # =========================================
-    # CALL HUGGING FACE INFERENCE API
-    # =========================================
+    _load_model()
 
-    payload = {
-        "inputs": text
-    }
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=64
+    )
 
-    try:
+    with torch.no_grad():
+        outputs = model(**inputs)
 
-        with httpx.Client(timeout=60.0) as client:
+    logits = outputs.logits
+    probabilities = torch.softmax(logits, dim=1).cpu().numpy()[0]
 
-            response = client.post(
-                API_URL,
-                headers=HEADERS,
-                json=payload
-            )
+    human_score = float(probabilities[0])
+    ai_score = float(probabilities[1])
 
-            response.raise_for_status()
+    human_probability = round(human_score * 100, 2)
+    ai_probability = round(ai_score * 100, 2)
 
-            result = response.json()
-
-    except Exception as e:
-
-        raise RuntimeError(
-            f"Hugging Face inference failed: {e}"
-        )
-
-    # =========================================
-    # PARSE RESPONSE
-    # =========================================
-
-    if isinstance(result, dict) and result.get("error"):
-        raise RuntimeError(
-            f"Hugging Face API error: {result.get('error')}"
-        )
-
-    if isinstance(result, list) and result and isinstance(result[0], list):
-        predictions = result[0]
-    elif isinstance(result, list):
-        predictions = result
+    max_score = max(human_probability, ai_probability)
+    if max_score > 80:
+        confidence = "High"
+    elif max_score > 50:
+        confidence = "Medium"
     else:
-        raise RuntimeError(
-            f"Unexpected Hugging Face response type: {type(result).__name__} {result}"
-        )
+        confidence = "Low"
 
-    human_score = 0.0
-    ai_score = 0.0
+    prediction = "AI Generated" if ai_probability > human_probability else "Human Created"
 
-    for item in predictions:
-
-        if not isinstance(item, dict) or "label" not in item or "score" not in item:
-            continue
-
-        label = str(item["label"]).lower()
-        score = float(item["score"])
-
-        if "human" in label or label in ["label_0", "0"]:
-            human_score = score
-        elif "ai" in label or "machine" in label or label in ["label_1", "1"]:
-            ai_score = score
-
-    if human_score == 0.0 and ai_score == 0.0:
-        raise RuntimeError(
-            f"Unable to parse prediction scores from response: {result}"
-        )
+    return {
+        "content_type": "text",
+        "prediction": prediction,
+        "human_probability": human_probability,
+        "ai_probability": ai_probability,
+        "confidence": confidence
+    }
 
     # =========================================
     # CONVERT TO PERCENTAGES
