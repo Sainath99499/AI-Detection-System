@@ -22,6 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.post("/health_post")
+async def health_post(payload: dict):
+    return {"ok": True, "received": payload}
+
 # =========================================
 # ROUTES
 # =========================================
