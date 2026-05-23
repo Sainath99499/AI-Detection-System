@@ -1,47 +1,38 @@
-from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification
-)
+import os
+import httpx
 
-import torch
+MODEL_REPO = "sainathk07888/text-detector-model"
+API_URL = f"https://api-inference.huggingface.co/models/{MODEL_REPO}"
 
-MODEL_PATH = "sainathk07888/text-detector-model"
+HF_TOKEN = os.environ.get("HF_TOKEN")
+HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
 
-print("Loading trained model...")
-
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-
-model = AutoModelForSequenceClassification.from_pretrained(
-    MODEL_PATH,
-    low_cpu_mem_usage=True
-)
-
-model.eval()
-
-print("Model loaded successfully!")
 
 def predict_text(text):
 
-    inputs = tokenizer(
-        text,
-        return_tensors="pt",
-        truncation=True,
-        padding=True,
-        max_length=64
-    )
+    # Call Hugging Face Inference API to avoid loading large models in-process
+    payload = {"inputs": text}
 
-    with torch.no_grad():
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            resp = client.post(API_URL, headers=HEADERS, json=payload)
+            resp.raise_for_status()
+            result = resp.json()
+    except Exception as e:
+        raise RuntimeError(f"HF inference request failed: {e}")
 
-        outputs = model(**inputs)
-
-    logits = outputs.logits
-
-    probabilities = torch.softmax(logits, dim=1)
-
-    probabilities = probabilities.cpu().numpy()[0]
-
-    human_score = float(probabilities[0])
-    ai_score = float(probabilities[1])
+    # Expected result: list of {label,score} for sequence-classification
+    if isinstance(result, list) and len(result) >= 2:
+        try:
+            human_score = float(result[0].get("score", 0.0))
+            ai_score = float(result[1].get("score", 0.0))
+        except Exception:
+            # Fallback: treat first as human, second as ai
+            human_score = float(result[0]["score"])
+            ai_score = float(result[1]["score"])
+    else:
+        # Unknown response format: attempt to parse
+        raise RuntimeError(f"Unexpected HF inference response: {result}")
 
     # Convert to percentages
     human_probability = round(human_score * 100, 2)
@@ -49,22 +40,21 @@ def predict_text(text):
 
     # Confidence logic
     confidence = "Low"
-
     max_score = max(human_probability, ai_probability)
-
     if max_score > 80:
         confidence = "High"
-
     elif max_score > 50:
         confidence = "Medium"
 
-    # Determine prediction
     prediction = "AI Generated" if ai_probability > human_probability else "Human Created"
 
     return {
         "content_type": "text",
         "prediction": prediction,
         "human_probability": human_probability,
+        "ai_probability": ai_probability,
+        "confidence": confidence
+    }
         "ai_probability": ai_probability,
         "confidence": confidence
     }
