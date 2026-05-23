@@ -9,18 +9,6 @@ from pydantic import BaseModel
 import shutil
 import os
 
-# =========================================
-# IMPORT ML MODULES
-# =========================================
-
-from ml.text_detection.inference import predict_text
-
-from ml.image_detection.inference_image import predict_image
-
-from ml.audio_detection.inference_audio import predict_audio
-
-from ml.video_detection.inference_video import predict_video
-
 from ml.explanation_engine.explanation import (
     generate_explanation
 )
@@ -45,6 +33,8 @@ class TextRequest(BaseModel):
 
 @router.post("/text")
 async def detect_text(data: TextRequest):
+
+    from ml.text_detection.inference import predict_text
 
     # RUN TEXT MODEL
 
@@ -97,6 +87,8 @@ async def detect_image(
             buffer
         )
 
+    from ml.image_detection.inference_image import predict_image
+
     # RUN IMAGE MODEL
 
     result = predict_image(
@@ -148,6 +140,8 @@ async def detect_audio(
             buffer
         )
 
+    from ml.audio_detection.inference_audio import predict_audio
+
     # RUN AUDIO MODEL
 
     result = predict_audio(
@@ -198,6 +192,8 @@ async def detect_video(
             file.file,
             buffer
         )
+
+    from ml.video_detection.inference_video import predict_video
 
     # RUN VIDEO MODEL
 

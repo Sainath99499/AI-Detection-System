@@ -1,16 +1,9 @@
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# =========================================
-# LOAD MODEL
-# =========================================
+MODEL_NAME = "google/flan-t5-small"
 
-print("Loading explanation engine...")
-
-model_name = "google/flan-t5-base"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
-
-print("Explanation engine loaded!")
+tokenizer = None
+model = None
 
 # =========================================
 # GENERATE EXPLANATION
@@ -20,6 +13,17 @@ def generate_explanation(
     prediction,
     ai_probability
 ):
+
+    global tokenizer, model
+
+    if tokenizer is None or model is None:
+        print("Loading explanation engine...")
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            MODEL_NAME,
+            low_cpu_mem_usage=True
+        )
+        print("Explanation engine loaded!")
 
     prompt = f"""
     Explain why content may be classified as

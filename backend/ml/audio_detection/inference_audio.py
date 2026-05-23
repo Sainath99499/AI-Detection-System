@@ -20,7 +20,8 @@ processor = Wav2Vec2Processor.from_pretrained(
 )
 
 model = Wav2Vec2Model.from_pretrained(
-    MODEL_NAME
+    MODEL_NAME,
+    low_cpu_mem_usage=True
 )
 
 model.eval()
