@@ -11,11 +11,21 @@ from tensorflow.keras.layers import (
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
+from pathlib import Path
+
 # =========================================
-# DATASET PATH
+# BASE PATHS
 # =========================================
 
-DATASET_PATH = "ml/image_detection/dataset"
+BASE_DIR = Path(__file__).resolve().parent
+
+DATASET_PATH = BASE_DIR / "dataset"
+
+MODEL_DIR = BASE_DIR.parent.parent / "models"
+
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+MODEL_PATH = MODEL_DIR / "image_detector.h5"
 
 # =========================================
 # IMAGE SETTINGS
@@ -122,6 +132,8 @@ model.fit(
 # SAVE MODEL
 # =========================================
 
-model.save("models/image_detector.h5")
+model.save(MODEL_PATH)
 
 print("\nImage model training completed!")
+
+print(f"\nModel saved to: {MODEL_PATH}")
