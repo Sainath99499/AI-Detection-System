@@ -25,13 +25,13 @@ MODEL_DIR = BASE_DIR.parent.parent / "models"
 
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_PATH = MODEL_DIR / "image_detector.h5"
+MODEL_PATH = MODEL_DIR / "image_detector.keras"
 
 # =========================================
 # IMAGE SETTINGS
 # =========================================
 
-IMG_SIZE = (128, 128)
+IMG_SIZE = (224, 224)
 
 BATCH_SIZE = 8
 
@@ -70,7 +70,7 @@ model = Sequential([
         32,
         (3, 3),
         activation="relu",
-        input_shape=(128, 128, 3)
+        input_shape=(224, 224, 3)
     ),
 
     MaxPooling2D(2, 2),

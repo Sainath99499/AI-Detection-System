@@ -1,27 +1,22 @@
-import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-
-  const navigate = useNavigate();
-
   return (
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center">
 
-    <div className="min-h-screen flex flex-col justify-center items-center bg-slate-900 text-white">
-
-      <h1 className="text-5xl font-bold mb-6 text-center">
-        AI Content Authenticity Detection
+      <h1 className="text-6xl font-bold text-cyan-400 mb-6">
+        VeriAI
       </h1>
 
-      <p className="text-xl text-gray-300 mb-10">
-        Detect AI-generated text using DeBERTa AI
+      <p className="text-gray-300 text-xl mb-10">
+        Professional AI Content Detection System
       </p>
 
-      <button
-        onClick={() => navigate("/upload")}
-        className="bg-blue-600 px-8 py-4 rounded-2xl text-xl hover:bg-blue-700"
+      <a
+        href="/detect"
+        className="bg-cyan-500 hover:bg-cyan-600 px-8 py-4 rounded-xl text-lg font-semibold"
       >
         Start Detection
-      </button>
+      </a>
 
     </div>
   );

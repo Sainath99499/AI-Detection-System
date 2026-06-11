@@ -106,9 +106,8 @@ async def detect_text(data: TextRequest):
             data.text
         )
     except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        logger.exception("Text inference failed")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
     # GENERATE EXPLANATION
 
@@ -134,8 +133,9 @@ async def detect_image(
     upload_dir = os.path.join(tempfile.gettempdir(), "ai_detection_uploads")
     os.makedirs(upload_dir, exist_ok=True)
 
-    # sanitize filename and ensure a fallback
-    filename = os.path.basename(file.filename) if file.filename else f"upload-{uuid.uuid4().hex}"
+    # sanitize filename with UUID prefix to prevent collisions
+    raw_name = os.path.basename(file.filename) if file.filename else "upload"
+    filename = f"{uuid.uuid4().hex}_{raw_name}"
     file_path = os.path.join(upload_dir, filename)
 
     # SAVE FILE with validation
@@ -143,11 +143,10 @@ async def detect_image(
         bytes_written = await save_upload_file(file, file_path, max_size=MAX_IMAGE_SIZE, allowed_types=ALLOWED_IMAGE_TYPES)
         logger.info("Saved image upload", extra={"filename": file_path, "bytes": bytes_written, "content_type": file.content_type})
     except ValueError as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=400, content={"error": str(e), "trace": tb})
+        return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        logger.exception("Failed to save image upload")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
     try:
         from ml.image_detection.inference_image import predict_image
@@ -163,8 +162,15 @@ async def detect_image(
 
         return result
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        logger.exception("Image inference failed")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    finally:
+        # Clean up temp file
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except OSError:
+            pass
 
 # =========================================
 # AUDIO DETECTION
@@ -177,7 +183,8 @@ async def detect_audio(
     upload_dir = os.path.join(tempfile.gettempdir(), "ai_detection_uploads")
     os.makedirs(upload_dir, exist_ok=True)
 
-    filename = os.path.basename(file.filename) if file.filename else f"upload-{uuid.uuid4().hex}"
+    raw_name = os.path.basename(file.filename) if file.filename else "upload"
+    filename = f"{uuid.uuid4().hex}_{raw_name}"
     file_path = os.path.join(upload_dir, filename)
 
     # SAVE FILE with validation
@@ -185,11 +192,10 @@ async def detect_audio(
         bytes_written = await save_upload_file(file, file_path, max_size=MAX_AUDIO_SIZE, allowed_types=ALLOWED_AUDIO_TYPES)
         logger.info("Saved audio upload", extra={"filename": file_path, "bytes": bytes_written, "content_type": file.content_type})
     except ValueError as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=400, content={"error": str(e), "trace": tb})
+        return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        logger.exception("Failed to save audio upload")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
     try:
         from ml.audio_detection.inference_audio import predict_audio
@@ -198,9 +204,14 @@ async def detect_audio(
         result["explanation"] = explanation
         return result
     except Exception as e:
-        tb = traceback.format_exc()
         logger.exception("Audio inference failed")
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    finally:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except OSError:
+            pass
 
 # =========================================
 # VIDEO DETECTION
@@ -213,7 +224,8 @@ async def detect_video(
     upload_dir = os.path.join(tempfile.gettempdir(), "ai_detection_uploads")
     os.makedirs(upload_dir, exist_ok=True)
 
-    filename = os.path.basename(file.filename) if file.filename else f"upload-{uuid.uuid4().hex}"
+    raw_name = os.path.basename(file.filename) if file.filename else "upload"
+    filename = f"{uuid.uuid4().hex}_{raw_name}"
     file_path = os.path.join(upload_dir, filename)
 
     # SAVE FILE with validation
@@ -221,11 +233,10 @@ async def detect_video(
         bytes_written = await save_upload_file(file, file_path, max_size=MAX_VIDEO_SIZE, allowed_types=ALLOWED_VIDEO_TYPES)
         logger.info("Saved video upload", extra={"filename": file_path, "bytes": bytes_written, "content_type": file.content_type})
     except ValueError as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=400, content={"error": str(e), "trace": tb})
+        return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception as e:
-        tb = traceback.format_exc()
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        logger.exception("Failed to save video upload")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
     try:
         from ml.video_detection.inference_video import predict_video
@@ -234,6 +245,11 @@ async def detect_video(
         result["explanation"] = explanation
         return result
     except Exception as e:
-        tb = traceback.format_exc()
         logger.exception("Video inference failed")
-        return JSONResponse(status_code=500, content={"error": str(e), "trace": tb})
+        return JSONResponse(status_code=500, content={"error": str(e)})
+    finally:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except OSError:
+            pass

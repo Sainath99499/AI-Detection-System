@@ -33,8 +33,7 @@ async def log_requests(request: Request, call_next):
         return JSONResponse(
             status_code=500,
             content={
-                "error": str(e),
-                "trace": traceback.format_exc()
+                "error": str(e)
             }
         )
 

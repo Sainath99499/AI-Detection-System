@@ -7,7 +7,9 @@ import traceback
 logger = logging.getLogger("ai_detection.ml.image")
 
 BASE_DIR = Path(__file__).resolve().parent
-MODEL_PATH = BASE_DIR.parent.parent / "models" / "image_detector.h5"
+
+MODEL_PATH = BASE_DIR.parent.parent / "models" / "image_detector.keras"
+
 
 # Detect if we should use fallback (either on Render or if model files are missing)
 USE_FALLBACK = "RENDER" in os.environ or not MODEL_PATH.exists()
@@ -17,10 +19,15 @@ model = None
 def _load_image_model():
     global model
     if model is None:
-        logger.info("Loading image detection model...")
+        print("Loading image detection model...")
+        import tensorflow as tf
         from tensorflow.keras.models import load_model
-        model = load_model(str(MODEL_PATH))
-        logger.info("Image model loaded successfully!")
+        custom_objects = {
+            "preprocess_input": tf.keras.applications.efficientnet.preprocess_input
+        }
+        model = load_model(str(MODEL_PATH), custom_objects=custom_objects)
+        print("Image model loaded successfully!")
+
 
 def predict_image(img_path):
     global USE_FALLBACK
@@ -35,7 +42,17 @@ def predict_image(img_path):
             # LOAD AND PREPROCESS IMAGE
             img = image.load_img(str(img_path), target_size=(224, 224))
             img_array = image.img_to_array(img)
-            img_array = img_array / 255.0
+            
+            # Check if model utilizes EfficientNet to determine if rescaling is built-in
+            is_efficientnet = False
+            for layer in model.layers:
+                if "efficientnet" in layer.name.lower():
+                    is_efficientnet = True
+                    break
+            
+            if not is_efficientnet:
+                img_array = img_array / 255.0
+                
             img_array = np.expand_dims(img_array, axis=0)
 
             # RUN MODEL
@@ -47,10 +64,11 @@ def predict_image(img_path):
             else:
                 prediction = float(np.array(prediction_raw).flatten()[0])
 
-            ai_probability = round(float(prediction) * 100, 2)
-            human_probability = round(100 - ai_probability, 2)
+            human_probability = round(float(prediction) * 100, 2)
+            ai_probability = round(100 - human_probability, 2)
         except Exception as e:
             logger.exception("Failed to load or run TensorFlow image model, falling back to simulation")
+            traceback.print_exc()
             USE_FALLBACK = True
 
     if USE_FALLBACK:

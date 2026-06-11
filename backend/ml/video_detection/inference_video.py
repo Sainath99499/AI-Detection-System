@@ -1,11 +1,8 @@
-import random
 import os
+import cv2
+import tempfile
 
-try:
-    import cv2
-    OPENCV_AVAILABLE = True
-except ImportError:
-    OPENCV_AVAILABLE = False
+from ml.image_detection.inference_image import predict_image
 
 # =========================================
 # VIDEO PREDICTION
@@ -13,47 +10,56 @@ except ImportError:
 
 def predict_video(video_path):
 
-    global OPENCV_AVAILABLE
     frame_scores = []
 
-    if OPENCV_AVAILABLE:
-        try:
-            cap = cv2.VideoCapture(video_path)
-            frame_count = 0
-            while True:
-                success, frame = cap.read()
-                if not success:
-                    break
-                frame_count += 1
-                if frame_count % 30 == 0:
-                    ai_score = random.uniform(40, 95)
-                    frame_scores.append(ai_score)
-            cap.release()
-        except Exception:
-            OPENCV_AVAILABLE = False
+    try:
 
-    if not OPENCV_AVAILABLE or len(frame_scores) == 0:
-        # Graceful pure-Python simulation fallback (avoids system library/OpenCV errors)
-        try:
-            file_size = os.path.getsize(video_path)
-        except Exception:
-            file_size = 10 * 1024 * 1024  # Default to 10MB
+        cap = cv2.VideoCapture(video_path)
 
-        # Estimate duration: assume ~500KB/sec average bitrate, min 5 seconds
-        estimated_duration = max(5, file_size / (500 * 1024))
-        # Estimate frames at 30 fps
-        estimated_frames = int(estimated_duration * 30)
+        frame_count = 0
 
-        for frame_count in range(1, estimated_frames + 1):
-            if frame_count % 30 == 0:
-                ai_score = random.uniform(40, 95)
-                frame_scores.append(ai_score)
+        while True:
 
-    # =========================================
-    # NO FRAMES
-    # =========================================
+            success, frame = cap.read()
 
-    if len(frame_scores) == 0:
+            if not success:
+                break
+
+            frame_count += 1
+
+            # Analyze every 15th frame
+            if frame_count % 15 == 0:
+
+                temp_file = tempfile.NamedTemporaryFile(
+                    suffix=".jpg",
+                    delete=False
+                )
+
+                frame_path = temp_file.name
+
+                temp_file.close()
+
+                cv2.imwrite(frame_path, frame)
+
+                try:
+
+                    result = predict_image(frame_path)
+
+                    frame_scores.append(
+                        result["ai_probability"]
+                    )
+
+                finally:
+
+                    if os.path.exists(frame_path):
+                        os.remove(frame_path)
+
+        cap.release()
+
+    except Exception as e:
+
+        print(f"Video detection error: {e}")
+
         return {
             "content_type": "video",
             "prediction": "Unable to Analyze",
@@ -63,7 +69,21 @@ def predict_video(video_path):
         }
 
     # =========================================
-    # FINAL AGGREGATED SCORE
+    # NO FRAMES FOUND
+    # =========================================
+
+    if len(frame_scores) == 0:
+
+        return {
+            "content_type": "video",
+            "prediction": "Unable to Analyze",
+            "ai_probability": 0,
+            "human_probability": 0,
+            "confidence": "Low"
+        }
+
+    # =========================================
+    # FINAL SCORE
     # =========================================
 
     avg_ai_score = round(
@@ -76,26 +96,23 @@ def predict_video(video_path):
         2
     )
 
-    prediction = "Human Video"
-
-    if avg_ai_score > human_score:
-
-        prediction = "AI Generated Video"
-
-    confidence = "Low"
+    prediction = (
+        "AI Generated Video"
+        if avg_ai_score > human_score
+        else "Human Video"
+    )
 
     max_score = max(
         avg_ai_score,
         human_score
     )
 
-    if max_score > 80:
-
+    if max_score >= 80:
         confidence = "High"
-
-    elif max_score > 50:
-
+    elif max_score >= 60:
         confidence = "Medium"
+    else:
+        confidence = "Low"
 
     return {
         "content_type": "video",

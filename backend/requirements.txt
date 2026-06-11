@@ -42,3 +42,4 @@ tensorflow==2.15.0
 librosa
 opencv-python-headless
 soundfile
+Pillow
