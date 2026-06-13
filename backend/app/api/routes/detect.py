@@ -79,6 +79,36 @@ async def save_upload_file(upload_file: UploadFile, dest_path: str, max_size: Op
 router = APIRouter()
 
 
+@router.get("/debug_status")
+async def debug_status():
+    from ml.text_detection.inference import MODEL_PATH as TEXT_PATH, USE_FALLBACK as TEXT_FALLBACK, model as text_model
+    from ml.image_detection.inference_image import MODEL_PATH as IMAGE_PATH, USE_FALLBACK as IMAGE_FALLBACK, model as image_model
+    from ml.audio_detection.inference_audio import USE_FALLBACK as AUDIO_FALLBACK, model as audio_model
+
+    return {
+        "env": {
+            "RENDER": "RENDER" in os.environ,
+            "USE_ML_FALLBACK": os.environ.get("USE_ML_FALLBACK"),
+        },
+        "text_model": {
+            "path": str(TEXT_PATH),
+            "exists": TEXT_PATH.exists(),
+            "fallback_active": TEXT_FALLBACK,
+            "loaded": text_model is not None
+        },
+        "image_model": {
+            "path": str(IMAGE_PATH),
+            "exists": IMAGE_PATH.exists(),
+            "fallback_active": IMAGE_FALLBACK,
+            "loaded": image_model is not None
+        },
+        "audio_model": {
+            "fallback_active": AUDIO_FALLBACK,
+            "loaded": audio_model is not None
+        }
+    }
+
+
 @router.post("/_debug_echo")
 async def debug_echo(payload: dict):
     return {"ok": True, "received": payload}

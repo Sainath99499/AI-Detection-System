@@ -2,8 +2,13 @@ import os
 import random
 from pathlib import Path
 
-# Use fallback on Render to avoid OOM or if dependencies are missing
-USE_FALLBACK = "RENDER" in os.environ
+# Check if a fallback is explicitly requested
+USE_FALLBACK = os.environ.get("USE_ML_FALLBACK", "false").lower() == "true"
+
+if USE_FALLBACK:
+    print("Audio detection: Fallback explicitly requested via USE_ML_FALLBACK environment variable.")
+else:
+    print("Audio detection: Loading real model (Hugging Face Wav2Vec2) on demand.")
 
 processor = None
 model = None

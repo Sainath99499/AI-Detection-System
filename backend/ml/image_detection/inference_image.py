@@ -11,8 +11,16 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR.parent.parent / "models" / "image_detector.keras"
 
 
-# Detect if we should use fallback (either on Render or if model files are missing)
-USE_FALLBACK = "RENDER" in os.environ or not MODEL_PATH.exists()
+# Check if a fallback is explicitly requested, or if model files are missing
+USE_FALLBACK = os.environ.get("USE_ML_FALLBACK", "false").lower() == "true" or not MODEL_PATH.exists()
+
+if USE_FALLBACK:
+    if os.environ.get("USE_ML_FALLBACK", "false").lower() == "true":
+        print("Image detection: Fallback explicitly requested via USE_ML_FALLBACK environment variable.")
+    else:
+        print(f"Image detection: Fallback enabled because model files were not found at {MODEL_PATH}")
+else:
+    print(f"Image detection: Model path found at {MODEL_PATH}. Loading real model on demand.")
 
 model = None
 

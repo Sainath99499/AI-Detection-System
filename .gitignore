@@ -12,7 +12,7 @@ venv/
 uploads/
 
 # ML Models
-models/
+/models/
 hf_cache/
 
 # Database
